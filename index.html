@@ -171,6 +171,8 @@
             const [allNewsData, setAllNewsData] = useState([]);
             const [isLoading, setIsLoading] = useState(true);
             const [error, setError] = useState(null);
+            const [lastUpdated, setLastUpdated] = useState(null);
+            const [isUpdating, setIsUpdating] = useState(false);
             const [expandedCard, setExpandedCard] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
             const [activeCategory, setActiveCategory] = useState('All');
@@ -179,11 +181,10 @@
             const itemsPerPage = 5;
 
             const fetchNews = useCallback(async () => {
-                setIsLoading(true);
+                if(!isLoading) setIsUpdating(true);
                 setError(null);
                 
-                // A reliable, key-less RSS to JSON service
-                const rssFeedUrl = "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml";
+                const rssFeedUrl = "https://news.google.com/rss/search?q=Artificial%20Intelligence";
                 const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssFeedUrl)}`;
 
                 try {
@@ -193,16 +194,26 @@
                     const data = await response.json();
                     
                     if (data.status === 'ok' && data.items) {
-                        const formattedNews = data.items.map((item, index) => ({
-                            id: index,
-                            category: 'Top Headlines', // Assign a default category
-                            title: item.title,
-                            summary: item.description.replace(/<[^>]*>?/gm, '').substring(0, 200) + '...', // Clean and truncate summary
-                            source: new URL(item.link).hostname.replace('www.', ''), // Extract source from link
-                            link: item.link,
-                            date: item.pubDate.split(' ')[0] // Extract date
-                        }));
+                        const formattedNews = data.items.map((item, index) => {
+                            // Extract summary from content, removing HTML
+                            const summary = item.content ? item.content.replace(/<[^>]*>?/gm, '').substring(0, 200) + '...' : 'No summary available.';
+                            // Extract source from title if available
+                            const titleParts = item.title.split(' - ');
+                            const source = titleParts.length > 1 ? titleParts.pop() : new URL(item.link).hostname.replace('www.', '');
+                            const title = titleParts.join(' - ');
+
+                            return {
+                                id: item.guid || index,
+                                category: 'Top Headlines',
+                                title: title,
+                                summary: summary,
+                                source: source,
+                                link: item.link,
+                                date: item.pubDate
+                            }
+                        });
                         setAllNewsData(formattedNews);
+                        setLastUpdated(new Date());
                     } else {
                         throw new Error("Could not parse news from the RSS feed.");
                     }
@@ -211,8 +222,9 @@
                     setError("Could not fetch live news. Please try again later.");
                 } finally {
                     setIsLoading(false);
+                    setIsUpdating(false);
                 }
-            }, []);
+            }, [isLoading]);
 
             useEffect(() => {
                 fetchNews();
@@ -357,7 +369,10 @@
                         </main>
                         
                         <footer className="text-center mt-12 text-gray-500 text-sm">
-                            <p>&copy; 2025 AI News Hub. All rights reserved.</p>
+                            <p>
+                                {isUpdating ? 'Updating news...' : (lastUpdated ? `Last updated: ${lastUpdated.toLocaleTimeString()}`: '')}
+                            </p>
+                            <p className="mt-1">&copy; 2025 AI News Hub. All rights reserved.</p>
                             <p>News powered by public RSS feeds.</p>
                         </footer>
                     </div>
