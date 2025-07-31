@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Hub - Live</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel to translate JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            scroll-behavior: smooth;
+        }
+        .sticky {
+            position: -webkit-sticky;
+            position: sticky;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- SVG Icons ---
+        const ChevronDownIcon = ({ isExpanded }) => (
+          <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        );
+
+        const GlobeIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9V3m0 9a9 9 0 019-9m-9 9a9 9 0 00-9 9" />
+            </svg>
+        );
+
+        const SearchIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+        );
+        
+        const NewspaperIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clipRule="evenodd" /><path d="M15 7h2v5h-2V7z" /></svg>;
+        const BuildingOfficeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2 0h2v2h-2V9zm2-4h-2v2h2V5z" clipRule="evenodd" /></svg>;
+        const UserGroupIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>;
+        const ScaleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clipRule="evenodd" /></svg>;
+        const ArrowRightIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
+        const TagIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A1 1 0 012 10V5a1 1 0 011-1h5a1 1 0 01.707.293l7 7zM6 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>;
+
+        const { useState, useMemo, useEffect, useCallback } = React;
+
+        const categories = [
+            { name: 'All', icon: null, emoji: '🌐' },
+            { name: 'Top Headlines', icon: <NewspaperIcon />, emoji: '📰' },
+            { name: 'Industry Deep Dives', icon: <BuildingOfficeIcon />, emoji: '🏢' },
+            { name: 'Movers & Shakers', icon: <UserGroupIcon />, emoji: '👥' },
+            { name: 'Ethics & Governance', icon: <ScaleIcon />, emoji: '⚖️' },
+        ];
+
+        // --- Components ---
+        const getCategoryIcon = (categoryName) => {
+            const category = categories.find(c => c.name === categoryName);
+            return category ? category.icon : <TagIcon />;
+        };
+
+        const FeaturedCard = ({ item }) => (
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-indigo-200 hover:shadow-2xl transition-shadow duration-300">
+                <div className="p-6 md:p-8">
+                    <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">Featured News</p>
+                    <h2 className="mt-2 text-xl md:text-2xl font-bold text-gray-900 leading-tight">{item.title}</h2>
+                    <p className="mt-4 text-gray-600">{item.summary}</p>
+                    <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
+                        <p className="text-sm text-gray-500">{item.source} &middot; {new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 hover:scale-105">
+                            Read More <ArrowRightIcon />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const NewsCard = ({ item, expandedCard, toggleCard }) => (
+            <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 ease-in-out mb-4 hover:scale-[1.02]">
+                <div className="p-6">
+                    <div className="flex justify-between items-start cursor-pointer" onClick={() => toggleCard(item.id)}>
+                        <div>
+                            <div className="inline-flex items-center tracking-wide text-xs text-indigo-500 font-semibold uppercase">
+                               {getCategoryIcon(item.category)} {item.category}
+                            </div>
+                            <h3 className="block mt-1 text-lg font-medium text-black">{item.title}</h3>
+                            <p className="mt-2 text-gray-500 text-sm">{item.source} &middot; {new Date(item.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                        <button className="text-gray-500 hover:text-gray-700 ml-4 flex-shrink-0 pt-1">
+                            <ChevronDownIcon isExpanded={expandedCard === item.id} />
+                        </button>
+                    </div>
+                    {expandedCard === item.id && (
+                        <div className="mt-4 border-t pt-4">
+                            <p className="text-gray-600">{item.summary}</p>
+                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center text-indigo-600 hover:text-indigo-900 font-semibold">
+                                Read Full Article <ArrowRightIcon />
+                            </a>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+
+        const LoadingSpinner = () => (
+            <div className="flex flex-col items-center justify-center py-20">
+                <div className="spinner"></div>
+                <p className="mt-4 text-gray-600">Fetching the latest AI news...</p>
+            </div>
+        );
+
+        const ErrorMessage = ({ message, onRetry }) => (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6 flex items-center justify-between" role="alert">
+                <div>
+                    <strong className="font-bold">Oops! </strong>
+                    <span className="block sm:inline">{message}</span>
+                </div>
+                <button onClick={onRetry} className="px-4 py-1 text-sm font-medium rounded-md text-red-700 border border-red-700 hover:bg-red-200 transition-colors">
+                    Try Again
+                </button>
+            </div>
+        );
+        
+        const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+            if (totalPages <= 1) return null;
+
+            return (
+                <div className="flex items-center justify-between mt-8">
+                    <button
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Previous
+                    </button>
+                    <span className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Next
+                    </button>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [allNewsData, setAllNewsData] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [expandedCard, setExpandedCard] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [activeCategory, setActiveCategory] = useState('All');
+            const [sortBy, setSortBy] = useState('newest');
+            const [currentPage, setCurrentPage] = useState(1);
+            const itemsPerPage = 5;
+
+            const fetchNews = useCallback(async () => {
+                setIsLoading(true);
+                setError(null);
+                
+                // A reliable, key-less RSS to JSON service
+                const rssFeedUrl = "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml";
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssFeedUrl)}`;
+
+                try {
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error("Network response was not ok.");
+
+                    const data = await response.json();
+                    
+                    if (data.status === 'ok' && data.items) {
+                        const formattedNews = data.items.map((item, index) => ({
+                            id: index,
+                            category: 'Top Headlines', // Assign a default category
+                            title: item.title,
+                            summary: item.description.replace(/<[^>]*>?/gm, '').substring(0, 200) + '...', // Clean and truncate summary
+                            source: new URL(item.link).hostname.replace('www.', ''), // Extract source from link
+                            link: item.link,
+                            date: item.pubDate.split(' ')[0] // Extract date
+                        }));
+                        setAllNewsData(formattedNews);
+                    } else {
+                        throw new Error("Could not parse news from the RSS feed.");
+                    }
+                } catch (err) {
+                    console.error("Fetch error:", err);
+                    setError("Could not fetch live news. Please try again later.");
+                } finally {
+                    setIsLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchNews();
+            }, [fetchNews]);
+
+            useEffect(() => {
+                setCurrentPage(1);
+            }, [activeCategory, searchTerm, sortBy]);
+
+            const toggleCard = (id) => {
+                setExpandedCard(expandedCard === id ? null : id);
+            };
+
+            const filteredAndSortedNews = useMemo(() => {
+                return allNewsData
+                    .filter(item => {
+                        const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
+                        const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
+                        return matchesCategory && matchesSearch;
+                    })
+                    .sort((a, b) => {
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
+                    });
+            }, [allNewsData, searchTerm, activeCategory, sortBy]);
+
+            const totalPages = Math.ceil(filteredAndSortedNews.length / itemsPerPage);
+
+            const paginatedNews = useMemo(() => {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                return filteredAndSortedNews.slice(startIndex, endIndex);
+            }, [currentPage, filteredAndSortedNews]);
+            
+            const featuredArticle = useMemo(() => {
+                if (filteredAndSortedNews.length === 0) return null;
+                return filteredAndSortedNews[0];
+            }, [filteredAndSortedNews]);
+
+            return (
+                <div className="bg-gray-50 min-h-screen">
+                    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+                        <header className="text-center mb-10">
+                            <div className="flex items-center justify-center gap-3">
+                                <GlobeIcon />
+                                <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">AI News Hub</h1>
+                            </div>
+                            <p className="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">Your interactive, auto-updating briefing on the world of Artificial Intelligence.</p>
+                        </header>
+
+                        <main>
+                            {isLoading ? (
+                                <LoadingSpinner />
+                            ) : error ? (
+                                <ErrorMessage message={error} onRetry={fetchNews} />
+                            ) : (
+                                <>
+                                    {featuredArticle && <FeaturedCard item={featuredArticle} />}
+
+                                    {/* --- Controls --- */}
+                                    <div className="bg-white p-4 rounded-xl shadow-md mb-8 sticky top-4 z-10">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="relative md:col-span-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search articles by title..."
+                                                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <SearchIcon />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <select
+                                                    className="w-full p-2 border rounded-lg bg-white focus:ring-indigo-500 focus:border-indigo-500"
+                                                    onChange={(e) => setSortBy(e.target.value)}
+                                                    value={sortBy}
+                                                >
+                                                    <option value="newest">Sort by Newest</option>
+                                                    <option value="oldest">Sort by Oldest</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-4 hidden md:flex flex-wrap gap-2">
+                                            {categories.map(category => (
+                                                <button
+                                                    key={category.name}
+                                                    onClick={() => setActiveCategory(category.name)}
+                                                    className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 flex-shrink-0 ${
+                                                        activeCategory === category.name 
+                                                        ? 'bg-indigo-600 text-white shadow-lg' 
+                                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                    }`}
+                                                >
+                                                    {category.icon}
+                                                    {category.name}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-4 md:hidden">
+                                            <label htmlFor="category-select" className="sr-only">Select a category</label>
+                                            <select
+                                                id="category-select"
+                                                className="w-full p-2 border rounded-lg bg-white focus:ring-indigo-500 focus:border-indigo-500"
+                                                value={activeCategory}
+                                                onChange={(e) => setActiveCategory(e.target.value)}
+                                            >
+                                                {categories.map(category => (
+                                                    <option key={category.name} value={category.name}>
+                                                        {category.emoji} {category.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* --- News List --- */}
+                                    <div className="transition-opacity duration-300">
+                                         {paginatedNews.length > 0 ? (
+                                            paginatedNews.map(item => (
+                                                <NewsCard key={item.id} item={item} expandedCard={expandedCard} toggleCard={toggleCard} />
+                                            ))
+                                         ) : (
+                                            <div className="text-center py-12 bg-white rounded-lg shadow-md">
+                                                <h3 className="text-xl font-semibold text-gray-700">No Articles Found</h3>
+                                                <p className="text-gray-500 mt-2">Try adjusting your search or filter settings.</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                </>
+                            )}
+                        </main>
+                        
+                        <footer className="text-center mt-12 text-gray-500 text-sm">
+                            <p>&copy; 2025 AI News Hub. All rights reserved.</p>
+                            <p>News powered by public RSS feeds.</p>
+                        </footer>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
